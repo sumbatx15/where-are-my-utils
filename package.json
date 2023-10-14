@@ -20,18 +20,24 @@
   ],
   "main": "./out/src/extension.js",
   "contributes": {
-    "commands": [
-      {
-        "command": "webview.open",
-        "title": "Open Webview",
-        "category": "Webview React"
-      },
-      {
-        "command": "extension.sendMessage",
-        "title": "Send Message to Webview",
-        "category": "Webview React"
-      }
-    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "calicoColors",
+          "title": "Calico Colors",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "calicoColors": [
+        {
+          "type": "webview",
+          "id": "calicoColors.colorsView",
+          "name": "Calico Colors"
+        }
+      ]
+    },
     "configuration": {
       "title": "Webview React",
       "properties": {
@@ -54,41 +60,60 @@
     "vscode:prepublish": "npm run compile",
     "compile": "npm-run-all compile:*",
     "compile:extension": "tsc -p ./",
-    "compile:view": "webpack --mode development",
-    "watch": "npm-run-all -p watch:*",
+    "compile:view": "cd app && npm run build:watch",
+    "watch": "npm run watch:view --prefix app && npm run watch:extension",
+    "watch2": "concurrently \"npm:watch:extension\" \"npm:watch:view\"",
     "watch:extension": "tsc -watch -p ./",
-    "watch:view": "webpack --watch --mode development",
+    "watch:view": "npm run build:watch --prefix app",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
+    "@types/babel__generator": "^7.6.5",
+    "@types/babel__traverse": "^7.20.2",
     "@types/glob": "^7.1.3",
     "@types/mocha": "^8.0.4",
     "@types/node": "^12.11.7",
     "@types/react": "^17.0.1",
     "@types/react-dom": "^17.0.0",
     "@types/react-router-dom": "^5.1.7",
-    "@types/vscode": "^1.52.0",
+    "@types/vscode": "^1.82.0",
     "@typescript-eslint/eslint-plugin": "^4.9.0",
     "@typescript-eslint/parser": "^4.9.0",
+    "concurrently": "^8.2.1",
     "css-loader": "^5.0.1",
     "eslint": "^7.15.0",
     "eslint-plugin-react-hooks": "^4.2.0",
-    "glob": "^7.1.6",
+    "glob": "^7.2.3",
     "mocha": "^8.1.3",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.2.1",
     "style-loader": "^2.0.0",
     "ts-loader": "^8.0.15",
-    "typescript": "^4.1.2",
+    "typescript": "^4.9.5",
     "vscode-test": "^1.4.1",
     "webpack": "^5.21.1",
     "webpack-cli": "^4.5.0"
   },
   "dependencies": {
+    "@babel/generator": "^7.23.0",
+    "@babel/parser": "^7.23.0",
+    "@babel/traverse": "^7.23.0",
+    "@babel/types": "^7.23.0",
+    "@radix-ui/react-dialog": "^1.0.5",
+    "@radix-ui/react-popover": "^1.0.7",
+    "@radix-ui/react-slot": "^1.0.2",
+    "@vscode/codicons": "^0.0.33",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
+    "cmdk": "^0.2.0",
+    "lucide-react": "^0.279.0",
+    "path": "^0.12.7",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
-    "react-router-dom": "^5.2.0"
+    "react-router-dom": "^5.2.0",
+    "tailwind-merge": "^1.14.0",
+    "tailwindcss-animate": "^1.0.7"
   }
 }

@@ -1,0 +1,17 @@
+[cmdk-item][aria-selected='true'] {
+  background: rgba(255, 255, 255, 0.123);
+}
+
+html {
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}
+input {
+  border: none;
+  background: var(--vscode-input-background);
+}
+[cmdk-list-sizer] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}

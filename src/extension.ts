@@ -1,27 +1,40 @@
 import * as vscode from 'vscode';
-import { ViewLoader } from './view/ViewLoader';
-import { CommonMessage } from './view/messages/messageTypes';
+import './finder/index';
+import { WhereAreMyUtils } from './view/WebviewProvider';
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
+  // Get the TS extension+
+  const tsExtension = vscode.extensions.getExtension<{
+    getAPI: () => typeof import('typescript/lib/tsserverlibrary');
+  }>('vscode.typescript-language-features');
+  const e = await tsExtension?.activate();
+  const ts = tsExtension?.exports.getAPI(0);
+
+  const provider = new WhereAreMyUtils(context);
   context.subscriptions.push(
-    vscode.commands.registerCommand('webview.open', () => {
-      ViewLoader.showWebview(context);
-    }),
-
-    vscode.commands.registerCommand('extension.sendMessage', () => {
-      vscode.window
-        .showInputBox({
-          prompt: 'Send message to Webview',
-        })
-        .then(result => {
-          result &&
-            ViewLoader.postMessageToWebview<CommonMessage>({
-              type: 'COMMON',
-              payload: result,
-            });
-        });
-    })
+    vscode.window.registerWebviewViewProvider(WhereAreMyUtils.viewType, provider)
   );
+
+  provider._view?.webview.postMessage({ type: 'DIRNAME', payload: __dirname });
+
+  // Create a file system watcher
+  // const watcher = vscode.workspace.createFileSystemWatcher('**/*', false, false, false);
+
+  // Subscribe to create, change, and delete events
+  // watcher.onDidCreate(uri => {
+  //   provider.sendExportedFunctions();
+  // });
+
+  // watcher.onDidChange(uri => {
+  //   provider.sendExportedFunctions();
+  // });
+
+  // watcher.onDidDelete(uri => {
+  //   provider.sendExportedFunctions();
+  //   // vscode.window.showInformationMessage(`A  was deleted: ${uri.fsPath}`);
+  // });
+
+  // context.subscriptions.push(watcher);
 }
 
 export function deactivate() {}

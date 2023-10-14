@@ -88,8 +88,6 @@ export class ViewLoader {
       vscode.Uri.file(path.join(this.context.extensionPath, 'out', 'app', 'bundle.js'))
     );
 
-    const gender = getAPIUserGender();
-
     return `
       <!DOCTYPE html>
         <html lang="en">
@@ -103,10 +101,6 @@ export class ViewLoader {
           <div id="root"></div>
           <script>
             const vscode = acquireVsCodeApi();
-            const apiUserGender = "${gender}"
-          </script>
-          <script>
-            console.log('apiUserGender', apiUserGender)
           </script>
           <script src="${bundleScriptPath}"></script>
         </body>

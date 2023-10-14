@@ -1,6 +1,7 @@
 # VSCode Webview React Boilerplate
 
 An awesome boilerplate for developing VSCode Extension Webview in `React`, `React Router` and `TypeScript`.
+    "watch": "concurrently \"npm:watch:extension\" \"npm:watch:view\"",
 
 ![screenshot](screenshot.gif)
 
