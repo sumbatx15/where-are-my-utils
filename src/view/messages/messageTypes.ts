@@ -1,4 +1,4 @@
-import { ExportedFunction, ExportedFunctions } from '../../finder';
+import { ExportedFunction } from '../../finder';
 
 export interface Message {
   type: MessageType;
@@ -19,7 +19,7 @@ export interface GetFilesMessage extends Message {
 
 export interface FilesMessage extends Message {
   type: 'FILES';
-  payload: ExportedFunctions;
+  payload: ExportedFunction[];
 }
 
 export interface DirnameMessage extends Message {
@@ -27,11 +27,8 @@ export interface DirnameMessage extends Message {
   payload: string;
 }
 export interface GotoLineMessage extends Message {
-  type: 'GO_TO_LINE';
-  payload: {
-    path: string;
-    loc: ExportedFunction['loc'];
-  };
+  type: 'GOTO_LINE';
+  payload: ExportedFunction;
 }
 
 export type Messages =

@@ -29,18 +29,19 @@ export class WhereAreMyUtils implements vscode.WebviewViewProvider {
     webviewView.webview.onDidReceiveMessage(_data => {
       const data = _data as Messages & { type: MessageType };
       switch (data.type) {
-        case 'GO_TO_LINE': {
-          const { loc, path } = data.payload;
-          if (!loc) {
-            return;
-          }
-          const fileUri = vscode.Uri.parse(path);
+        case 'GOTO_LINE': {
+          const fn = data.payload;
+          const fileUri = vscode.Uri.file(fn.file);
           vscode.workspace.openTextDocument(fileUri).then(doc => {
             vscode.window.showTextDocument(doc).then(editor => {
-              const position = new vscode.Position(loc.start.line - 1, loc.start.column);
-              editor.selection = new vscode.Selection(position, position);
+              const start = new vscode.Position(fn.position.line - 1, fn.position.column - 1);
+              const end = new vscode.Position(
+                fn.position.line - 1,
+                fn.position.column - 1 + fn.name.length
+              );
+              editor.selection = new vscode.Selection(start, end);
               editor.revealRange(
-                new vscode.Range(position, position),
+                new vscode.Range(start, start),
                 vscode.TextEditorRevealType.InCenter
               );
             });

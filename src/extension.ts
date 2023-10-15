@@ -4,11 +4,6 @@ import { WhereAreMyUtils } from './view/WebviewProvider';
 
 export async function activate(context: vscode.ExtensionContext) {
   // Get the TS extension+
-  const tsExtension = vscode.extensions.getExtension<{
-    getAPI: () => typeof import('typescript/lib/tsserverlibrary');
-  }>('vscode.typescript-language-features');
-  const e = await tsExtension?.activate();
-  const ts = tsExtension?.exports.getAPI(0);
 
   const provider = new WhereAreMyUtils(context);
   context.subscriptions.push(

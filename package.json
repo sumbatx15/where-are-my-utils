@@ -4,7 +4,7 @@
   "description": "Boilerplate for developing webview using react in VSCode extension",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.52.0"
+    "vscode": "^1.82.0"
   },
   "categories": [
     "Other"
@@ -60,9 +60,9 @@
     "vscode:prepublish": "npm run compile",
     "compile": "npm-run-all compile:*",
     "compile:extension": "tsc -p ./",
-    "compile:view": "cd app && npm run build:watch",
-    "watch": "npm run watch:view --prefix app && npm run watch:extension",
-    "watch2": "concurrently \"npm:watch:extension\" \"npm:watch:view\"",
+    "compile:view": "npm run build --prefix app",
+    "watch2": "npm run watch:extension && npm run watch:view --prefix app",
+    "watch": "concurrently \"npm:watch:extension\" \"npm:watch:view\"",
     "watch:extension": "tsc -watch -p ./",
     "watch:view": "npm run build:watch --prefix app",
     "pretest": "npm run compile && npm run lint",
@@ -114,6 +114,7 @@
     "react-dom": "^17.0.1",
     "react-router-dom": "^5.2.0",
     "tailwind-merge": "^1.14.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "ts-morph": "^20.0.0"
   }
 }

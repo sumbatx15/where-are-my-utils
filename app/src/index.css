@@ -1,17 +1,91 @@
-[cmdk-item][aria-selected='true'] {
-  background: rgba(255, 255, 255, 0.123);
-}
-
 html {
   font-family: var(--vscode-font-family);
   font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+}
+body {
+  height: 100vh;
+  overflow: hidden;
+}
+#root,
+.command-container {
+  height: 100%;
 }
 input {
   border: none;
   background: var(--vscode-input-background);
+  color: var(--vscode-foreground);
+  height: 1.69rem;
+  border-radius: 0.5rem;
+  padding: 0 0.5rem;
+  font-size: 1rem;
+}
+[cmdk-root] {
+  display: flex;
+  flex-flow: column;
+  width: 100%;
+  gap: 0.5rem;
 }
 [cmdk-list-sizer] {
   display: flex;
   flex-direction: column;
+  gap: 0rem;
+}
+
+.function-container {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  position: relative;
+  padding: 0.4rem 0.6rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  transition: all 150ms;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.function-container[aria-selected='true'] {
   gap: 0.5rem;
+  background: var(--vscode-input-background);
+}
+
+.function {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.function .name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.function .file-path {
+  font-size: 0.5rem;
+  opacity: 0.5;
+}
+.functions-list {
+  flex: 1;
+  overflow: auto;
+}
+.function .codicon.codicon-arrow-small-right {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  scale: 0.6;
+  transform: translateY(-50%);
+  transform-origin: center;
+  opacity: 0;
+  transition: all 150ms;
+}
+
+.function-container[aria-selected='true'] .codicon.codicon-arrow-small-right {
+  right: 0.5rem;
+  opacity: 1;
+  scale: 1;
+}
+
+.codicon.codicon-symbol-method {
+  color: var(--vscode-symbolIcon-methodForeground);
 }

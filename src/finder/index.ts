@@ -1,115 +1,129 @@
-import { parse } from '@babel/parser';
-import traverse from '@babel/traverse';
-import * as t from '@babel/types';
-import * as fs from 'fs';
-import { glob } from 'glob';
+import {
+  Project,
+  SourceFile,
+  FunctionDeclaration,
+  VariableDeclaration,
+  Expression,
+  ArrowFunction,
+  CallExpression,
+  Type,
+  SyntaxKind,
+} from 'ts-morph';
 import * as vscode from 'vscode';
 
+const REACT_COMPONENT_REGEX = /ReactNode|ReactElement|JSX.Element|ForwardRefExoticComponent/;
+
 export interface ExportedFunction {
+  goto: string;
+  position: {
+    line: number;
+    column: number;
+  };
   name: string;
-  loc: t.SourceLocation | null | undefined;
+  returnType: string;
+  file: string;
 }
 
-export type ExportedFunctions = {
-  path: string;
-  exports: ExportedFunction[];
-}[];
+export type ExportedFunctionsMap = Map<string, ExportedFunction>;
 
-const findExportedFunctions = (code: string): ExportedFunction[] => {
-  try {
-    const ast = parse(code, {
-      sourceType: 'module',
-      plugins: ['jsx', 'typescript'],
-    });
+const functions: ExportedFunctionsMap = new Map();
 
-    const exportedFunctions: {
-      name: string;
-      loc: t.SourceLocation | null | undefined;
-    }[] = [];
+function isReactComponent(type: Type): boolean {
+  return REACT_COMPONENT_REGEX.test(type.getText());
+}
 
-    traverse(ast, {
-      ExportNamedDeclaration(path) {
-        if (t.isVariableDeclaration(path.node.declaration)) {
-          const isJSX = path.node.declaration.declarations.some(declaration => {
-            if (t.isCallExpression(declaration.init)) {
-              return true;
-            }
+function getNamePosition(declaration: FunctionDeclaration | VariableDeclaration): {
+  line: number;
+  column: number;
+} {
+  const name = declaration.getNameNode();
+  return declaration
+    .getSourceFile()
+    .getLineAndColumnAtPos(name?.getStart() || declaration.getStart());
+}
 
-            let isJSX = false;
-            if (t.isArrowFunctionExpression(declaration.init)) {
-              path.traverse({
-                JSXElement(childPath) {
-                  isJSX = true;
-                  childPath.stop();
-                },
-                JSXFragment(childPath) {
-                  isJSX = true;
-                  childPath.stop();
-                },
-              });
-            }
-            return isJSX;
-          });
-
-          if (isJSX) {
-            return path.skip();
-          }
-
-          path.node.declaration.declarations.forEach(declaration => {
-            if (t.isArrowFunctionExpression(declaration.init) && t.isIdentifier(declaration.id)) {
-              const name = declaration.id.name;
-              const loc = declaration.loc;
-              exportedFunctions.push({ name, loc });
-            }
-          });
-        } else if (t.isFunctionDeclaration(path.node.declaration)) {
-          let isJSX = false;
-          path.traverse({
-            JSXElement(childPath) {
-              isJSX = true;
-              childPath.stop();
-            },
-            JSXFragment(childPath) {
-              isJSX = true;
-              childPath.stop();
-            },
-          });
-
-          if (isJSX) {
-            return path.skip();
-          }
-          // check if its a jsx
-          const name = path.node.declaration.id?.name;
-          const loc = path.node.declaration.loc;
-          if (name) {
-            exportedFunctions.push({ name, loc });
-          }
-        }
-      },
-    });
-
-    return exportedFunctions;
-  } catch (e) {
-    console.error(e);
-    return [];
+function processInitializer(
+  declaration: VariableDeclaration,
+  initializer: Expression | ArrowFunction | CallExpression | undefined
+) {
+  if (
+    initializer &&
+    [SyntaxKind.FunctionExpression, SyntaxKind.ArrowFunction, SyntaxKind.CallExpression].includes(
+      initializer.getKind()
+    )
+  ) {
+    return handleFunctionLike(declaration, initializer);
   }
-};
+}
 
-export const getFiles = async (): Promise<ExportedFunctions> => {
+async function handleFunctionLike(
+  declaration: VariableDeclaration | FunctionDeclaration,
+  node: FunctionDeclaration | Expression | ArrowFunction | CallExpression
+): Promise<ExportedFunction | null> {
+  const returnType = node.getType().getCallSignatures()[0]?.getReturnType();
+
+  if (returnType && !isReactComponent(returnType)) {
+    const position = getNamePosition(declaration);
+    const sourceFile = declaration.getSourceFile();
+    const file = sourceFile.getFilePath();
+    const goto = `vscode://file/${file}:${position.line}:${position.column}`;
+    const name = declaration.getName() || 'anonymous';
+
+    return {
+      name: name,
+      returnType: returnType.getText(),
+      file,
+      goto: goto,
+      position,
+    };
+  }
+  return null;
+}
+
+function createKey(pos: ExportedFunction) {
+  return `${pos.goto}${pos.name}${pos.position.line}${pos.position.column}`;
+}
+
+async function processSourceFile(sourceFile: SourceFile) {
+  const symbolPromises = sourceFile.getExportSymbols().map(async symbol => {
+    const declarationPromises = symbol.getDeclarations().map(async declaration => {
+      if (declaration instanceof VariableDeclaration && declaration.getInitializer()) {
+        const pos = await processInitializer(declaration, declaration.getInitializer());
+        if (pos) {
+          functions.set(createKey(pos), pos);
+        }
+      } else if (declaration instanceof FunctionDeclaration) {
+        const pos = await handleFunctionLike(declaration, declaration);
+        if (pos) {
+          functions.set(createKey(pos), pos);
+        }
+      }
+    });
+
+    await Promise.all(declarationPromises);
+  });
+
+  await Promise.all(symbolPromises);
+}
+
+async function processAllFiles() {
   const rootPath = vscode.workspace.workspaceFolders?.[0].uri;
   if (!rootPath) {
     return [];
   }
 
-  const globPattern = vscode.Uri.joinPath(rootPath, '/**/*.{js,jsx,ts,tsx}');
-  const ignore = [vscode.Uri.joinPath(rootPath, '/node_modules/**')].map(uri => uri.fsPath);
+  const tsConfigFilePath = (
+    await vscode.workspace.findFiles('**/tsconfig.json', '**/node_modules/**')
+  )[0];
 
-  const files = glob.sync(globPattern.fsPath, { ignore });
-  const exportedFunctions = files.map(async file => {
-    const code = fs.readFileSync(file, 'utf-8');
-    const exports = findExportedFunctions(code);
-    return { path: file, exports };
+  const project = new Project({
+    tsConfigFilePath: tsConfigFilePath.fsPath,
   });
 
-  return await Promise.all(exportedFunctions);
+  await Promise.all(project.getSourceFiles().map(processSourceFile));
+}
+
+export const getFiles = async () => {
+  await processAllFiles();
+  return Array.from(functions.values());
 };
